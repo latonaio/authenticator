@@ -1,0 +1,13 @@
+server:
+  port: 1323
+  shutdown_wait_time: 1
+database:
+  host_name: HOST_NAME
+  port: PORT
+  user_name: DB_USER_NAME
+  user_password: DB_USER_PASSWORD
+  name: Authenticator # database name
+  table_name: Users # table name 強制指定のため
+  max_open_connection: 10
+  max_idle_connection: 5
+  max_life_time: 24
