@@ -1,29 +1,62 @@
 # Authenticator
 
 ## Description
-認証サービス  
-- 認証
+authenticatorはAIONのプラットフォーム上で動作するシステムに対して認証機能を提供するマイクロサービスです。  
 
-### セットアップ
+
+## 事前準備
+本マイクロサービスはDBにMySQLを利用します。  
+また、misc/dump.sqlをMySQLにインポートする必要があります。  
+
+デフォルトで使用するデータベース名とユーザーテーブルは misc/dump.sqlに用意されています,  
+またconfigs/configs.yamlに対象テーブルを指定していただければ、指定されたユーザーテーブル内容を参照します。  
+この場合 id(int),login_id(string),password(string) のカラムが必ず存在することが必要です。  
+
+kubectlを事前にインストール必要
 ```shell
-# statikのインストール
-$go get github.com/rakyll/statik
+$ brew install kubectl
+```
 
-# configs/configs.yamlに関連情報記述
+## セットアップ
+```shell
+$ git clone https://github.com/latonaio/authenticator.git
+$ cd authenticator
 
-# statikによるシングルバイナリためのファイル生成
-$ make statik
+# configs/configs.yamlの設定を編集
+# HOST_NAME, PORT, DB_USER_NAME, DB_USER_PASSWORDを変更する
+database:
+  host_name: HOST_NAME
+  port: PORT
+  user_name: DB_USER_NAME
+  user_password: DB_USER_PASSWORD
+  name: Authenticator # database name
+  table_name: Users # table name
 
-# image build 
+
+# Docker Imageの生成
 $ make docker-build
+```
 
-# デプロイ
+## 起動方法
+```shell
+#kubectlをinstall必要
+## 起動方法　
 $ kubectl apply -f deployments/deployments.yaml
 ```
 
 
-### エンドポイント
-```markdown
-- post /user
-- post /login
+## 利用方法
+Authenticatorでは以下のAPIが利用できます。
+```text
+ユーザー認証
+POST /login
 ```
+
+```text
+ユーザー作成
+POST /user
+```
+
+## システム構成図
+![img](docs/authenticator.png)
+

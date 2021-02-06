@@ -15,7 +15,7 @@ func (u *User) Register() error {
 }
 
 func (u *User) GetByLoginID(loginID string) (*User, error) {
-	result := db.ConPool.Con.Model(u).Where("login_ID = ?", loginID).First(u)
+	result := db.ConPool.Con.Model(u).Where("login_id = ?", loginID).First(u)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -31,7 +31,6 @@ func (u *User) User() *User {
 }
 
 func (u *User) SetUser(user *User) {
-	u.ID = user.ID
 	u.LoginID = user.LoginID
 	u.Password = user.Password
 	//u.CreatedAt = user.CreatedAt

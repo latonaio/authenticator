@@ -2,11 +2,13 @@ FROM golang:1.15.7-alpine3.13 AS builder
 
 ENV GO111MODULE=on
 RUN apk --no-cache add git make build-base
+RUN go get github.com/rakyll/statik
 WORKDIR /src
 
 COPY . .
 
 RUN mkdir -p /app
+RUN make statik
 # -a 強制リビルド
 RUN go build -a -ldflags="-s -w" -o /app /src/cmd/server/
 

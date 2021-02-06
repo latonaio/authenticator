@@ -26,22 +26,20 @@
 DROP TABLE IF EXISTS `Users`;
 
 CREATE TABLE `Users` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `login_id` varchar(20) NOT NULL DEFAULT '',
   `password` varchar(20) NOT NULL DEFAULT '',
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   `deleted_at` datetime DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `LOGIN_ID` (`login_id`)
+  PRIMARY KEY (`login_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 LOCK TABLES `Users` WRITE;
 /*!40000 ALTER TABLE `Users` DISABLE KEYS */;
 
-INSERT INTO `Users` (`id`, `login_id`, `password`, `created_at`, `updated_at`, `deleted_at`)
+INSERT INTO `Users` (`login_id`, `password`, `created_at`, `updated_at`, `deleted_at`)
 VALUES
-	(1,'test_login_id','test_password','2021-01-26 19:03:51','2021-01-26 19:03:51','0000-00-00 00:00:00');
+	('test_login_id','test_password','2021-01-26 19:03:51','2021-01-26 19:03:51','0000-00-00 00:00:00');
 
 /*!40000 ALTER TABLE `Users` ENABLE KEYS */;
 UNLOCK TABLES;

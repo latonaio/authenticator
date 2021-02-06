@@ -9,10 +9,6 @@ type UserIF interface {
 }
 
 type User struct {
-	ID       int `gorm:"primaryKey"`
-	LoginID  string
-	Password string
-	//CreatedAt time.Time  `gorm:"create_at"`
-	//UpdatedAt time.Time  `gorm:"update_at"`
-	//DeletedAt *time.Time `gorm:"delete_at"`
+	LoginID  string `gorm:"column:login_id"`
+	Password string `gorm:"column:password"`
 }

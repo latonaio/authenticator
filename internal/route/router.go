@@ -6,6 +6,8 @@ import (
 )
 
 func RegisterRouting(e *echo.Echo) {
+	// ユーザー作成
 	e.POST("/users", handler.RegisterUser)
+	// ユーザー認証
 	e.POST("/login", handler.EnsureUser)
 }
