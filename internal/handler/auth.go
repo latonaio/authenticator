@@ -2,10 +2,14 @@ package handler
 
 import (
 	"net/http"
+	"os"
+	"time"
 
+	"bitbucket.org/latonaio/authenticator/internal/crypto"
 	"bitbucket.org/latonaio/authenticator/internal/models"
 	custmerr "bitbucket.org/latonaio/authenticator/pkg/error"
 	custmres "bitbucket.org/latonaio/authenticator/pkg/response"
+	"github.com/form3tech-oss/jwt-go"
 	"github.com/labstack/echo/v4"
 )
 
@@ -26,10 +30,21 @@ func EnsureUser(c echo.Context) error {
 		return custmerr.ErrNotFound
 	}
 
-	// TODO verify password hash
-	if result.Password != param.Password {
+	if err := crypto.CompareHashAndPassword(result.Password, param.Password); err != nil {
+		c.Logger().Printf("Failed to login: %v", err)
 		return c.String(http.StatusUnauthorized, "The login ID or password you entered was incorrect")
 	}
 
-	return c.String(http.StatusOK, "success")
+	// generate JWT
+	token := jwt.New(jwt.SigningMethodHS256)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["user_id"] = user.User().ID
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix() // TODO: configs.yml とか環境変数とかに記述する
+	signedToken, err := token.SignedString(os.Getenv("PRIVATE_KEY"))
+	if err != nil {
+		c.Logger().Printf("Failed to generate JWT: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to generate access token.")
+	}
+
+	return c.String(http.StatusOK, signedToken)
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bitbucket.org/latonaio/authenticator/internal/crypto"
 	"bitbucket.org/latonaio/authenticator/internal/models"
 	custmres "bitbucket.org/latonaio/authenticator/pkg/response"
 	"github.com/labstack/echo/v4"
@@ -19,10 +20,15 @@ func RegisterUser(c echo.Context) error {
 	}
 	user := models.NewUser()
 
-	// TODO password hash化
+	encryptedPassword, err := crypto.Encrypt(param.Password)
+	if err != nil {
+		c.Logger().Printf("Failed to encrypt password: %v", err)
+		return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
+	}
+
 	user.SetUser(&models.User{
 		LoginID:  param.UserID,
-		Password: param.Password,
+		Password: encryptedPassword,
 	})
 	err = user.Register()
 	if err != nil {
