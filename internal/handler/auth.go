@@ -14,6 +14,7 @@ import (
 )
 
 type UserLoginParam struct {
+	//　TODO: アカウント作成時は、"user_id" と "password" なので、どちらかに統一したい。
 	UserName string `json:"user_name" form:"user_name"`
 	Password string `json:"user_password" form:"user_password"`
 }
@@ -29,7 +30,6 @@ func EnsureUser(c echo.Context) error {
 	if err != nil {
 		return custmerr.ErrNotFound
 	}
-
 	if err := crypto.CompareHashAndPassword(result.Password, param.Password); err != nil {
 		c.Logger().Printf("Failed to login: %v", err)
 		return c.String(http.StatusUnauthorized, "The login ID or password you entered was incorrect")
