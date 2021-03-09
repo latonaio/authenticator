@@ -36,11 +36,16 @@ func EnsureUser(c echo.Context) error {
 	}
 
 	// generate JWT
-	token := jwt.New(jwt.SigningMethodHS256)
+	token := jwt.New(jwt.SigningMethodRS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_id"] = user.User().ID
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix() // TODO: configs.yml とか環境変数とかに記述する
-	signedToken, err := token.SignedString(os.Getenv("PRIVATE_KEY"))
+	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(os.Getenv("PRIVATE_KEY")))
+	if err != nil {
+		c.Logger().Printf("Failed to parse private key: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to generate access token.")
+	}
+	signedToken, err := token.SignedString(privateKey)
 	if err != nil {
 		c.Logger().Printf("Failed to generate JWT: %v", err)
 		return c.String(http.StatusInternalServerError, "Failed to generate access token.")

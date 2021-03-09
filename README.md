@@ -61,6 +61,23 @@ POST /user
 
 
 ### テスト
+
+### Unit テスト
+authorizer のテストの際に秘密鍵、公開鍵のキーペアを使用します。
+下記のコマンドでキーペアを生成し、それぞれを unit テストに直接入力してください。
+
+`$ openssl rsa -pubout < private.key > public.key`
+
+
+```
+# pkg/authorizer/authorizer_test.go
+
+func TestValidateJWTToken(t *testing.T) {
+	const privateKey = "" <- ここに private.key の内容を入力
+	const publicKey = "" <- ここに public.key の内容を入力
+```
+
+### 動作確認
 `docker-compose` を使用して mysql と authenticator コンテナを立ててテストを行います。
 ホスト側のポート 1323 を使用して authenticator と通信します。
 
