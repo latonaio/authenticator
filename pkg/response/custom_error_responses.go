@@ -52,4 +52,9 @@ var (
 		Code:    http.StatusUnauthorized,
 		Message: customerror.ErrUnauthorized.Error(),
 	}
+
+	Conflict = ResponseFormat{
+		Code:    http.StatusConflict,
+		Message: customerror.ErrConflict.Error(),
+	}
 )

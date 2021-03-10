@@ -9,6 +9,7 @@ type UserIF interface {
 }
 
 type User struct {
+	ID       int    `gorm:"primaryKey"`
 	LoginID  string `gorm:"column:login_id"`
 	Password string `gorm:"column:password"`
 }

@@ -59,15 +59,13 @@ POST /user
 ## システム構成図
 ![img](docs/authenticator.png)
 
-
-### テスト
+## テスト
 
 ### Unit テスト
 authorizer のテストの際に秘密鍵、公開鍵のキーペアを使用します。
 下記のコマンドでキーペアを生成し、それぞれを unit テストに直接入力してください。
 
 `$ openssl rsa -pubout < private.key > public.key`
-
 
 ```
 # pkg/authorizer/authorizer_test.go
@@ -81,7 +79,7 @@ func TestValidateJWTToken(t *testing.T) {
 `docker-compose` を使用して mysql と authenticator コンテナを立ててテストを行います。
 ホスト側のポート 1323 を使用して authenticator と通信します。
 
-#### セットアップ
+### セットアップ
 `configs/configs.yaml` の database セクションの 設定を変更します。
 ```
 database:
@@ -90,7 +88,7 @@ database:
   # 他はそのまま
 ```
 
-#### コンテナの起動
+### コンテナの起動
 authenticator コンテナは起動後すぐに mysql とのコネクションを確立しようとします。
 そのため、 mysql コンテナの起動が完了してから authenticator コンテナを起動してください。
 
@@ -106,14 +104,37 @@ $ docker-compose up authenticator
 
 ```
 
-#### user の登録・ログイン
+## 入力規則
+user を新規登録する際は下記の入力規則にしたがって登録してください。
+
+### user_id (login_id)
+
+#### 使用可能文字
+アルファベット（a～z, A〜Z 大文字小文字を区別する）、数字（0～9）、記号(ダッシュ（-）、アンダースコア（_）、アポストロフィ（'）、ピリオド（.）)
+
+#### 文字数制限
+6〜30 文字
+
+### password
+
+#### 使用可能文字
+アルファベット（a～z, A〜Z 大文字小文字を区別する）、数字（0～9）、記号(ダッシュ（-）、アンダースコア（_）、アポストロフィ（'）、ピリオド（.）)
+
+#### パスワード長制限
+8〜30 文字
+
+#### その他の条件
+- ユーザ名の文字列がそのままパスワードの文字列に含まれていないこと
+- アルファベットの大文字、小文字がそれぞれ 1 文字以上含まれていること
+
+## user の登録・ログイン
 
 user を登録します。
 ```
-curl -X POST http://localhost:1323/users -d user_id=sample_user -d password=sample_user
+curl -X POST http://localhost:1323/users -d login_id=Sample_user -d password=OK_password
 ```
 
 ログインします。
 ```
-curl -X POST http://localhost:1323/login -d user_name=sample_user -d user_password=sample_user
+curl -X POST http://localhost:1323/login -d login_id=Sample_user -d password=OK_password
 ```

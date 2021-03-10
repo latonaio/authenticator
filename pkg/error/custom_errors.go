@@ -14,4 +14,5 @@ var (
 	ErrNotFound     = CustomErrMessage{message: "NOT_FOUND_RESOURCE"}
 	ErrBadRequest   = CustomErrMessage{message: "BAD_REQUEST"}
 	ErrUnauthorized = CustomErrMessage{message: "UNAUTHORIZED"}
+	ErrConflict     = CustomErrMessage{message: "CONFLICT"}
 )

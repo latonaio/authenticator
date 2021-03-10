@@ -14,9 +14,8 @@ import (
 )
 
 type UserLoginParam struct {
-	//　TODO: アカウント作成時は、"user_id" と "password" なので、どちらかに統一したい。
-	UserName string `json:"user_name" form:"user_name"`
-	Password string `json:"user_password" form:"user_password"`
+	LoginID  string `json:"login_id" form:"login_id"`
+	Password string `json:"password" form:"password"`
 }
 
 func EnsureUser(c echo.Context) error {
@@ -26,7 +25,7 @@ func EnsureUser(c echo.Context) error {
 		return c.JSON(custmres.BadRequestRes.Code, custmres.BadRequestRes)
 	}
 	user := models.NewUser()
-	result, err := user.GetByLoginID(param.UserName)
+	result, err := user.GetByLoginID(param.LoginID)
 	if err != nil {
 		return custmerr.ErrNotFound
 	}
