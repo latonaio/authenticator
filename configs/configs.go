@@ -17,6 +17,7 @@ type Configs interface {
 type configs struct {
 	Server   Server
 	Database Database
+	Jwt      Jwt
 }
 type Server struct {
 	Port             string `yaml:"port"`
@@ -33,6 +34,10 @@ type Database struct {
 	MaxLifeTime  int    `yaml:"max_life_time"`
 	Name         string `yaml:"name"`
 	TableName    string `yaml:"table_name"`
+}
+
+type Jwt struct {
+	Exp int64 `yaml:"exp"`
 }
 
 func New() (Configs, error) {

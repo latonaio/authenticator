@@ -11,3 +11,5 @@ database:
   max_open_connection: 10
   max_idle_connection: 5
   max_life_time: 24
+jwt:
+  exp: 24 # hour

@@ -44,8 +44,9 @@ func RegisterUser(c echo.Context) error {
 		return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
 	}
 	user.SetUser(&models.User{
-		LoginID:  param.LoginID,
-		Password: encryptedPassword,
+		LoginID:     param.LoginID,
+		Password:    encryptedPassword,
+		LastLoginAt: nil,
 	})
 
 	err = user.Register()

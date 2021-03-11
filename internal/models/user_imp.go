@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"bitbucket.org/latonaio/authenticator/pkg/db"
 	validation "github.com/go-ozzo/ozzo-validation"
@@ -14,6 +15,14 @@ func NewUser() UserIF {
 
 func (u *User) Register() error {
 	result := db.ConPool.Con.Create(u)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+func (u *User) Login() error {
+	result := db.ConPool.Con.Model(u).UpdateColumn("last_login_at", time.Now())
 	if result.Error != nil {
 		return result.Error
 	}

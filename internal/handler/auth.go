@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"bitbucket.org/latonaio/authenticator/configs"
 	"bitbucket.org/latonaio/authenticator/internal/crypto"
 	"bitbucket.org/latonaio/authenticator/internal/models"
 	custmerr "bitbucket.org/latonaio/authenticator/pkg/error"
@@ -16,6 +17,16 @@ import (
 type UserLoginParam struct {
 	LoginID  string `json:"login_id" form:"login_id"`
 	Password string `json:"password" form:"password"`
+}
+
+var jwtExp int64
+
+func init() {
+	cfgs, err := configs.New()
+	if err != nil {
+		panic(err)
+	}
+	jwtExp = cfgs.Get().Jwt.Exp
 }
 
 func EnsureUser(c echo.Context) error {
@@ -38,7 +49,7 @@ func EnsureUser(c echo.Context) error {
 	token := jwt.New(jwt.SigningMethodRS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_id"] = user.User().ID
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix() // TODO: configs.yml とか環境変数とかに記述する
+	claims["exp"] = time.Now().Add(time.Hour * time.Duration(jwtExp)).Unix()
 	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(os.Getenv("PRIVATE_KEY")))
 	if err != nil {
 		c.Logger().Printf("Failed to parse private key: %v", err)
@@ -49,6 +60,9 @@ func EnsureUser(c echo.Context) error {
 		c.Logger().Printf("Failed to generate JWT: %v", err)
 		return c.String(http.StatusInternalServerError, "Failed to generate access token.")
 	}
-
+	if err := result.Login(); err != nil {
+		c.Logger().Printf("Failed to record last_login_at: %v", err)
+		return c.String(http.StatusInternalServerError, "Failed to login.")
+	}
 	return c.String(http.StatusOK, signedToken)
 }
