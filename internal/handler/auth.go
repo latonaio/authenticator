@@ -8,7 +8,6 @@ import (
 	"bitbucket.org/latonaio/authenticator/configs"
 	"bitbucket.org/latonaio/authenticator/internal/crypto"
 	"bitbucket.org/latonaio/authenticator/internal/models"
-	custmerr "bitbucket.org/latonaio/authenticator/pkg/error"
 	custmres "bitbucket.org/latonaio/authenticator/pkg/response"
 	"github.com/form3tech-oss/jwt-go"
 	"github.com/labstack/echo/v4"
@@ -38,11 +37,11 @@ func EnsureUser(c echo.Context) error {
 	user := models.NewUser()
 	result, err := user.GetByLoginID(param.LoginID)
 	if err != nil {
-		return custmerr.ErrNotFound
+		return c.JSON(custmres.NotFoundErrRes.Code, custmres.NotFoundErrRes)
 	}
 	if err := crypto.CompareHashAndPassword(result.Password, param.Password); err != nil {
 		c.Logger().Printf("Failed to login: %v", err)
-		return c.String(http.StatusUnauthorized, "The login ID or password you entered was incorrect")
+		return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
 	}
 
 	// generate JWT
@@ -53,16 +52,17 @@ func EnsureUser(c echo.Context) error {
 	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(os.Getenv("PRIVATE_KEY")))
 	if err != nil {
 		c.Logger().Printf("Failed to parse private key: %v", err)
-		return c.String(http.StatusInternalServerError, "Failed to generate access token.")
+		return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
 	}
 	signedToken, err := token.SignedString(privateKey)
 	if err != nil {
 		c.Logger().Printf("Failed to generate JWT: %v", err)
-		return c.String(http.StatusInternalServerError, "Failed to generate access token.")
+		return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
 	}
+
 	if err := result.Login(); err != nil {
 		c.Logger().Printf("Failed to record last_login_at: %v", err)
-		return c.String(http.StatusInternalServerError, "Failed to login.")
+		return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
 	}
-	return c.String(http.StatusOK, signedToken)
+	return c.JSON(http.StatusOK, custmres.JWTResponseFormat{Jwt: signedToken})
 }

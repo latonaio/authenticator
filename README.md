@@ -5,12 +5,9 @@ authenticatorはAIONのプラットフォーム上で動作するシステムに
 
 
 ## 事前準備
-本マイクロサービスはDBにMySQLを利用します。  
-また、misc/dump.sqlをMySQLにインポートする必要があります。  
-
-デフォルトで使用するデータベース名とユーザーテーブルは misc/dump.sqlに用意されています,  
-またconfigs/configs.yamlに対象テーブルを指定していただければ、指定されたユーザーテーブル内容を参照します。  
-この場合 id(int),login_id(string),password(string) のカラムが必ず存在することが必要です。  
+本マイクロサービスはDBにMySQLを利用します。
+デフォルトでは Users テーブルを参照しますが、configs/configs.yamlに対象テーブルを指定していただければ、指定されたテーブル内容を参照します。  
+この場合 id(int),login_id(string),password(string) のカラムが必ず存在することが必要です。 
 
 kubectlを事前にインストール必要
 ```shell
@@ -43,6 +40,33 @@ $ make docker-build
 $ kubectl apply -f deployments/deployments.yaml
 ```
 
+## データベース管理
+データベースの migration には goose を使用します。
+下記コマンドで goose をインストールしてください
+```
+$ go get bitbucket.org/liamstask/goose/cmd/goose
+```
+
+goose のデータベース接続設定は `db/dbconf.yml` に記載されています。必要に応じて書き換えてください。
+また、デフォルトで使用するデータベースのテーブルは `db/migrations/xxxxx_createUsersTable.sql (最も古いもの)` に定義されています。
+
+migration に関するコマンドは以下です。
+
+```
+# 疎通確認
+$ goose status
+
+# マイグレーション
+$ goose up
+
+# ロールバック
+$ goose down
+
+# マイグレーションファイルの作成
+$ goose create XXXXXX sql
+```
+
+データベースのスキーマを変更する場合は、マイグレーションファイルを作成し SQL を記述後マイグレーションを実行してください。
 
 ## 利用方法
 Authenticatorでは以下のAPIが利用できます。
@@ -117,6 +141,29 @@ authenticator はリクエストに対し下記のいずれかの応答をしま
 | 404 | ユーザが未登録 |
 | 500 | サーバー内エラー |
 
+認証に成功すると JWT を返却します。
+
+```response-example
+{"jwt":"xxxxx.xxxxx.xxxxx"}
+```
+
+### 認可
+authenticator サーバーから取得した jwt を認可するには、下記のコマンドで出力される公開鍵を認可サーバーに配置する必要があります。
+```
+$ make generate-key-pair
+```
+
+認可サーバーでは authenticator サーバーの公開鍵を使用し jwt が改竄されていない事、有効期限切れでない事を確認する必要があります。 
+`pkg/authrizer` でこれらを確認するライブラリを提供しています。
+
+### JWT
+JET のクレームには下記の項目が含まれています。
+
+| name | description|
+| --- | --- |
+| user_id | ユーザーID |
+| exp | 有効期限 |
+
 ## システム構成図
 ![img](docs/authenticator.png)
 
@@ -164,6 +211,28 @@ $ docker-compose up mysql
 # authenticator コンテナを起動
 $ docker-compose up authenticator
 
+```
+
+#### 秘密鍵の配置
+authenticator は JWT の生成に秘密鍵を使用します。
+下記コマンドで生成される秘密鍵を環境変数 `PRIVATE_KEY` にセットしてください
+
+```
+$ make generate-key-pair
+```
+
+#### ローカル環境で実行 (おすすめ)
+mysql のみ docker-compose で起動し、authenticator をローカル環境で起動することも可能です。
+この場合下記コマンドで authenticator を立ち上げることで、秘密鍵の生成と環境変数へのセットを自動で行います。
+
+`$ make local-run` 
+
+`configs/configs.yaml` は下記のように設定してください
+```
+database:
+  host_name: localhost
+  port: 3306
+  # 他はそのまま
 ```
 
 #### user の登録・ログイン
