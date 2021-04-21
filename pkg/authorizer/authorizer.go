@@ -3,6 +3,7 @@ package authorizer
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/form3tech-oss/jwt-go"
@@ -11,7 +12,11 @@ import (
 // VerifyJWTToken verifies jwt token.
 // Returns a token if the verified is successful, an error if it fails.
 func VerifyJWTToken(tokenString string) (*jwt.Token, error) {
-	publicKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(os.Getenv("AUTHENTICATOR_PUBLIC_KEY")))
+	b,err := ioutil.ReadFile(os.Getenv("CREDENTIAL_FILE_PATH"))
+	if err != nil {
+		return nil,fmt.Errorf("failed to read authenticator public key file: %v", err)
+	}
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(b)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse authenticator public key: %v", err)
 	}
