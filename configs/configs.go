@@ -15,9 +15,10 @@ type Configs interface {
 }
 
 type configs struct {
-	Server   Server
-	Database Database
-	Jwt      Jwt
+	Server         Server
+	Database       Database
+	Jwt            Jwt
+	PrivateKey string
 }
 type Server struct {
 	Port             string `yaml:"port"`

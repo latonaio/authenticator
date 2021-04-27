@@ -13,3 +13,4 @@ database:
   max_life_time: 24
 jwt:
   exp: 24 # hour
+private_key: private_key

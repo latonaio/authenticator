@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"os"
 	"time"
 
 	"bitbucket.org/latonaio/authenticator/configs"
@@ -19,6 +18,7 @@ type UserLoginParam struct {
 }
 
 var jwtExp int64
+var privateKeyPem string
 
 func init() {
 	cfgs, err := configs.New()
@@ -26,6 +26,7 @@ func init() {
 		panic(err)
 	}
 	jwtExp = cfgs.Get().Jwt.Exp
+	privateKeyPem = cfgs.Get().PrivateKey
 }
 
 func EnsureUser(c echo.Context) error {
@@ -49,7 +50,7 @@ func EnsureUser(c echo.Context) error {
 	claims := token.Claims.(jwt.MapClaims)
 	claims["user_id"] = user.User().ID
 	claims["exp"] = time.Now().Add(time.Hour * time.Duration(jwtExp)).Unix()
-	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(os.Getenv("PRIVATE_KEY")))
+	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privateKeyPem))
 	if err != nil {
 		c.Logger().Printf("Failed to parse private key: %v", err)
 		return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
