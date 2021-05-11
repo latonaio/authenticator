@@ -18,8 +18,8 @@ type configs struct {
 	Server         Server
 	Database       Database
 	Jwt            Jwt
-	PrivateKey string
-}
+	PrivateKey     string `yaml:"private_key"`
+} 
 type Server struct {
 	Port             string `yaml:"port"`
 	ShutdownWaitTIme int    `yaml:"shutdown_wait_time"`

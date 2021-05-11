@@ -44,7 +44,7 @@ var (
 	}
 
 	NotFoundErrRes = ResponseFormat{
-		Code:    http.StatusInternalServerError,
+		Code:    http.StatusNotFound,
 		Message: customerror.ErrNotFound.Error(),
 	}
 

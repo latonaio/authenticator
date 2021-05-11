@@ -10,4 +10,8 @@ func RegisterRouting(e *echo.Echo) {
 	e.POST("/users", handler.RegisterUser)
 	// ユーザー認証
 	e.POST("/login", handler.EnsureUser)
+	// ユーザー更新
+	e.PUT("/users/login_id/:login_id", handler.UpdateUser)
+	// ユーザー取得
+	e.GET("/users/login_id/:login_id", handler.GetUser)
 }

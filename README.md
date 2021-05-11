@@ -71,7 +71,22 @@ $ goose create XXXXXX sql
 ## 利用方法
 Authenticatorでは以下のAPIが利用できます。
 
-### POST /user
+### user
+user は下記の項目を保持しています。より厳密な定義を知りたい場合は DB 定義を確認してください。
+
+| name | description |
+| --- | --- |
+| login_id | ログイン ID |
+| password | パスワード |
+| qos | quality of service|
+
+`login_id`, `password` には入力規則があります。詳しくは入力規則の項目を参照してください。
+
+`qos` は現状 `default`、`raw` の二つの値のどちらかを登録できます。
+入力しない場合や、これら二つ以外の値を登録しようとすると `default` が設定されます。
+`qos` の値を `raw` にする事で、`authenticator` の入力規則を無視した `login_id`, `password` を登録することができます。
+
+### POST /users
 ユーザー登録を行います。
 
 #### リクエスト
@@ -81,19 +96,24 @@ Authenticatorでは以下のAPIが利用できます。
 | --- | --- |
 | login_id | ユーザを識別する id (必須) |
 | password | ユーザ認証を行う password (必須) |
+| qos | qos の値を指定します。デフォルトでは "default" が設定されます。|
 
 login_id と password の入力規則に関しては 入力規則 のセクションを参照してください
 
 ```http_request
-POST /user
+POST /users
 Origin: http://{{host_name}}
 Content-Type: application/x-www-form-urlencoded
 
-login_id=Sample_user&password=OK_password
+login_id=Sample_user&password=OK_password&qos=default
 ```
 
-```example
-curl -X POST http://{{host_name}}/users -d login_id=Sample_user -d password=OK_password
+```example 1
+curl -X POST http://{{host_name}}/users -d login_id=Sample_user -d password=OK_password -d qos=default
+```
+
+```example 2
+curl -X POST http://{{host_name}}/users -d login_id=sampleuser -d password=okpassword -d qos=raw
 ```
 
 #### レスポンス
@@ -104,6 +124,76 @@ authenticator はリクエストに対し下記のいずれかの応答をしま
 | 200 | ユーザーの登録に成功 |
 | 400 | リクエストパラメータが不正 (入力規則を満たしているか確認してください)|
 | 409 | login_id が既に登録済み |
+| 500 | サーバー内エラー |
+
+### GET /users/login_id/{{login_id}}
+ユーザー情報を取得します。
+
+#### リクエスト
+ユーザー情報の取得に GET リクエストを送信してください。
+
+```http_request
+GET /users/login_id/{{logain_id}}
+Origin: http://{{host_name}}
+```
+
+```
+curl -X GET http://{{host_name}}/users/login_id/{{logain_id}}
+```
+
+#### レスポンス
+authenticator はリクエストに対し下記のいずれかの応答をします。
+
+| status code | description |
+| --- | --- |
+| 200 | user 情報の返却 |
+| 404 | ユーザが未登録 |
+| 500 | サーバー内エラー |
+
+ユーザーが登録されている場合、ユーザー情報を返します。
+
+```response-example
+{"login_id":"xxxxxx"}
+```
+
+### PUT /users/login_id/{{login_id}}
+ユーザー更新を行います。
+
+#### リクエスト
+ユーザー情報の更新には下記のパラメータを指定して、 PUT リクエストを送信してください。
+
+| name | description |
+| --- | --- |
+| old_password | 変更前の password (必須) |
+| login_id | ユーザを識別する id ( 指定しない場合は更新されません ) |
+| password | ユーザ認証を行う password ( 指定しない場合は更新されません ) |
+| qos | qos の値 ( 指定しない場合は更新されません ) |
+
+login_id と password の入力規則に関しては 入力規則 のセクションを参照してください。
+また、更新の際には old_password に更新前のパスワードを指定し、認可する必要があります。
+
+```http_request
+POST /users/login_id/{{logain_id}}
+Origin: http://{{host_name}}
+Content-Type: application/x-www-form-urlencoded
+
+old_password=OK_password&login_id=sampleuser&password=okpassword&qos=raw
+```
+
+```
+curl -X PUT http://{{host_name}}/users/login_id/{{logain_id}} -d old_password=OK_password -d login_id=sampleuser -d password=okpassword -d qos=raw
+```
+
+#### レスポンス
+
+authenticator はリクエストに対し下記のいずれかの応答をします。
+
+| status code | description |
+| --- | --- |
+| 200 | user の更新に成功 |
+| 400 | リクエストパラメータが不正 |
+| 401 | ユーザーの認証に失敗 |
+| 404 | ユーザが未登録 |
 | 500 | サーバー内エラー |
 
 ### POST /login
@@ -235,16 +325,24 @@ database:
   # 他はそのまま
 ```
 
-#### user の登録・ログイン
-
-user を登録します。
+#### 登録
 ```
 curl -X POST http://localhost:1323/users -d login_id=Sample_user -d password=OK_password
 ```
 
-ログインします。
+#### 取得
+```
+curl -X GET http://localhost:1323/users/login_id/Sample_user
+```
+
+#### ログイン
 ```
 curl -X POST http://localhost:1323/login -d login_id=Sample_user -d password=OK_password
+```
+
+#### 更新
+```
+curl -X PUT http://localhost:1323/users/login_id/Sample_user -d old_password=OK_password -d login_id=sampleuser -d password=okpassword -d qos=raw
 ```
 
 ## 入力規則
@@ -269,3 +367,6 @@ user を新規登録する際は下記の入力規則にしたがって登録し
 #### その他の条件
 - ユーザ名の文字列がそのままパスワードの文字列に含まれていないこと
 - アルファベットの大文字、小文字がそれぞれ 1 文字以上含まれていること
+
+### 入力規則を無視する
+qos (quality of service) を "raw" とすることで入力規則を無視してユーザーの登録、更新が可能です。

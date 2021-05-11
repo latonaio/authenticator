@@ -32,6 +32,7 @@ CREATE TABLE `Users` (
   `id` int AUTO_INCREMENT,
   `login_id` varchar(20) NOT NULL DEFAULT '',
   `password` varchar(70) NOT NULL DEFAULT '',
+  `qos` varchar(20) NOT NULL DEFAULT 'default',
   `last_login_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,

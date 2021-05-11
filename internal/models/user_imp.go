@@ -21,6 +21,14 @@ func (u *User) Register() error {
 	return nil
 }
 
+func (u *User) Update() error {
+	result := db.ConPool.Con.Model(u).Updates(u)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
 func (u *User) Login() error {
 	result := db.ConPool.Con.Model(u).UpdateColumn("last_login_at", time.Now())
 	if result.Error != nil {
@@ -48,9 +56,14 @@ func (u *User) User() *User {
 func (u *User) SetUser(user *User) {
 	u.LoginID = user.LoginID
 	u.Password = user.Password
+	u.Qos = user.Qos
 	//u.CreatedAt = user.CreatedAt
 	//u.UpdatedAt = user.UpdatedAt
 	//u.DeletedAt = user.DeletedAt
+}
+
+func (u *User) NeedsValidation() bool {
+	return u.Qos == QosDefault
 }
 
 func (u User) Validate() error {
