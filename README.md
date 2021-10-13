@@ -1,10 +1,15 @@
 # authenticator
 
-## Description
+## 概要
 authenticator は、主にエッジコンピューティング環境において、AIONのプラットフォーム上で動作する任意のアプリケーション・システム・マイクロサービス等に対して、認証機能を提供するマイクロサービスです。  
 
-## システム構成図
+## システム構成図  
 ![img](docs/authenticator.png)
+
+## authenticator が含まれる アーキテクチャ（OMOTE-Bakoアプリケーションの例）  
+authenticatorは、下記の黄色い枠の部分のリソースです。
+![img](docs/omotebako_architecture_20211013_authenticator.png)
+
 
 ## 事前準備
 本マイクロサービスは、主にエッジコンピューティング環境において認証情報を維持管理するためのDBとして、MySQLを利用します。
