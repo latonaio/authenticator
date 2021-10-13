@@ -57,9 +57,14 @@ func (u *User) SetUser(user *User) {
 	u.LoginID = user.LoginID
 	u.Password = user.Password
 	u.Qos = user.Qos
+	u.IsEncrypt = user.IsEncrypt
 	//u.CreatedAt = user.CreatedAt
 	//u.UpdatedAt = user.UpdatedAt
 	//u.DeletedAt = user.DeletedAt
+}
+
+func (u *User) IsDeleted() bool {
+	return u.DeletedAt != nil
 }
 
 func (u *User) NeedsValidation() bool {

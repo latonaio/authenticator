@@ -28,7 +28,7 @@ func NewDBConPool(ctx context.Context, config configs.Configs) error {
 		DBName:    cfgs.Database.Name,
 		TableName: cfgs.Database.TableName,
 	}
-	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?charset=utf8mb4&parseTime=True&loc=Local",
+	dsn := fmt.Sprintf(XXXXXXXXX/XXXXXXXXXXXparseTime=True&loc=Local",
 		cfgs.Database.UserName,
 		cfgs.Database.UserPassword,
 		cfgs.Database.HostName,

@@ -40,9 +40,16 @@ func EnsureUser(c echo.Context) error {
 	if err != nil {
 		return c.JSON(custmres.NotFoundErrRes.Code, custmres.NotFoundErrRes)
 	}
-	if err := crypto.CompareHashAndPassword(result.Password, param.Password); err != nil {
-		c.Logger().Printf("Failed to login: %v", err)
-		return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
+	if !*result.IsEncrypt {
+		if result.Password != param.Password {
+			c.Logger().Print("Failed to login due to incorrect password")
+			return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
+		}
+	} else {
+		if err := crypto.CompareHashAndPassword(result.Password, param.Password); err != nil {
+			c.Logger().Printf("Failed to login: %v", err)
+			return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
+		}
 	}
 
 	// generate JWT

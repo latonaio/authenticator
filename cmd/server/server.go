@@ -12,11 +12,6 @@ import (
 	"bitbucket.org/latonaio/authenticator/pkg/server"
 )
 
-//var (
-//	Version  string
-//	Revision string
-//)
-
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cfgs, err := configs.New()

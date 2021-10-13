@@ -19,8 +19,10 @@ type User struct {
 	Password    string     `gorm:"column:password"`
 	LastLoginAt *time.Time `gorm:"column:last_login_at"`
 	Qos         Qos        `gorm:"column:qos"`
+	IsEncrypt   *bool      `gorm:"column:is_encrypt"`
 	CreatedAt   time.Time  // column name is `created_at`
 	UpdatedAt   time.Time  // column name is `updated_at`
+	DeletedAt   *time.Time // column name is `deleted_at`
 }
 
 const (

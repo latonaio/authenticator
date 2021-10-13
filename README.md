@@ -1,23 +1,33 @@
-# Authenticator
+# authenticator
 
 ## Description
-authenticatorはAIONのプラットフォーム上で動作するシステムに対して認証機能を提供するマイクロサービスです。  
+authenticator は、主にエッジコンピューティング環境において、AIONのプラットフォーム上で動作する任意のアプリケーション・システム・マイクロサービス等に対して、認証機能を提供するマイクロサービスです。  
 
+## システム構成図
+![img](docs/authenticator.png)
 
 ## 事前準備
-本マイクロサービスはDBにMySQLを利用します。
+本マイクロサービスは、主にエッジコンピューティング環境において認証情報を維持管理するためのDBとして、MySQLを利用します。
 デフォルトでは Users テーブルを参照しますが、configs/configs.yamlに対象テーブルを指定していただければ、指定されたテーブル内容を参照します。  
 この場合 id(int),login_id(string),password(string) のカラムが必ず存在することが必要です。 
 
-kubectlを事前にインストール必要
+kubectlの事前インストールが必要です
 ```shell
 $ brew install kubectl
 ```
 
 ## セットアップ
+1. リポジトリをクローンする。
 ```shell
 $ git clone https://github.com/latonaio/authenticator.git
 $ cd authenticator
+```
+
+2. `sh scripts/setup-configs.sh` を実行する。   
+    ※ shellscript内での具体的な処理内容は以下の通り。
+```
+# 秘密鍵の生成 (JWT:JSON Web Token の署名に必要)
+$ make generate-key-pair
 
 # configs/configs.yamlの設定を編集
 # HOST_NAME, PORT, DB_USER_NAME, DB_USER_PASSWORDを変更する
@@ -29,15 +39,37 @@ database:
   name: Authenticator # database name
   table_name: Users # table name
 
-# Docker Imageの生成
+# configs/configs.yamlの設定を編集
+# private_key に生成した秘密鍵をコピペする
+private_key: |-
+  -----BEGIN RSA PRIVATE KEY-----
+  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/XXXXXXXX
+  (中略)
+  XXX/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/XXXXXXXXX=
+  -----END RSA PRIVATE KEY-----
+```
+3. Docker Imageの生成
+```
 $ make docker-build
 ```
 
 ## 起動方法
-```shell
-#kubectlをinstall必要
-## 起動方法　
-$ kubectl apply -f deployments/deployments.yaml
+authenticatorはaion-core上で稼働します。したがって、[aion-service-definitions](https://bitbucket.org/latonaio/aion-service-definitions/src/master/)にある、aion-coreのマニフェストファイルであるservices.ymlにauthenticatorが起動するように設定する必要があります。記入例は以下の通りです。
+
+```
+microservices:
+  authenticator:           # サービス名
+      startup: yes         # AION起動時に起動するか
+      always: yes          # 常時起動するか
+      multiple: no         # 複数同時に起動するか
+      network: NodePort
+      ports:
+      - name: authenticator
+        protocol: TCP
+        port: xxxx        # kube内のPod間で通信する際に使うポート番号
+        nodePort: xxxx    # kube外からの通信に必要なポート番号
+      env:
+        KANBAN_ADDR: aion-statuskanban:10000
 ```
 
 ## データベース管理
@@ -68,9 +100,7 @@ $ goose create XXXXXX sql
 
 データベースのスキーマを変更する場合は、マイグレーションファイルを作成し SQL を記述後マイグレーションを実行してください。
 
-## 利用方法
-Authenticatorでは以下のAPIが利用できます。
-
+## モデル定義
 ### user
 user は下記の項目を保持しています。より厳密な定義を知りたい場合は DB 定義を確認してください。
 
@@ -86,6 +116,9 @@ user は下記の項目を保持しています。より厳密な定義を知り
 入力しない場合や、これら二つ以外の値を登録しようとすると `default` が設定されます。
 `qos` の値を `raw` にする事で、`authenticator` の入力規則を無視した `login_id`, `password` を登録することができます。
 
+## 利用方法
+Authenticatorでは以下のAPIが利用できます。
+
 ### POST /users
 ユーザー登録を行います。
 
@@ -100,7 +133,7 @@ user は下記の項目を保持しています。より厳密な定義を知り
 
 login_id と password の入力規則に関しては 入力規則 のセクションを参照してください
 
-```http_request
+```
 POST /users
 Origin: http://{{host_name}}
 Content-Type: application/x-www-form-urlencoded
@@ -108,11 +141,11 @@ Content-Type: application/x-www-form-urlencoded
 login_id=Sample_user&password=OK_password&qos=default
 ```
 
-```example 1
+```
 curl -X POST http://{{host_name}}/users -d login_id=Sample_user -d password=OK_password -d qos=default
 ```
 
-```example 2
+```
 curl -X POST http://{{host_name}}/users -d login_id=sampleuser -d password=okpassword -d qos=raw
 ```
 
@@ -123,7 +156,7 @@ authenticator はリクエストに対し下記のいずれかの応答をしま
 | --- | --- |
 | 200 | ユーザーの登録に成功 |
 | 400 | リクエストパラメータが不正 (入力規則を満たしているか確認してください)|
-| 409 | login_id が既に登録済み |
+| 409 | login_id が既に登録済み or 削除されたユーザ |
 | 500 | サーバー内エラー |
 
 ### GET /users/login_id/{{login_id}}
@@ -148,6 +181,7 @@ authenticator はリクエストに対し下記のいずれかの応答をしま
 | --- | --- |
 | 200 | user 情報の返却 |
 | 404 | ユーザが未登録 |
+| 409 | ユーザが削除済み |
 | 500 | サーバー内エラー |
 
 ユーザーが登録されている場合、ユーザー情報を返します。
@@ -173,7 +207,7 @@ login_id と password の入力規則に関しては 入力規則 のセクシ�
 また、更新の際には old_password に更新前のパスワードを指定し、認可する必要があります。
 
 ```http_request
-POST /users/login_id/{{logain_id}}
+PUT /users/login_id/{{logain_id}}
 Origin: http://{{host_name}}
 Content-Type: application/x-www-form-urlencoded
 
@@ -194,6 +228,7 @@ authenticator はリクエストに対し下記のいずれかの応答をしま
 | 400 | リクエストパラメータが不正 |
 | 401 | ユーザーの認証に失敗 |
 | 404 | ユーザが未登録 |
+| 409 | 既に削除されたユーザー |
 | 500 | サーバー内エラー |
 
 ### POST /login
@@ -229,6 +264,7 @@ authenticator はリクエストに対し下記のいずれかの応答をしま
 | 400 | リクエストパラメータが不正 |
 | 401 | ユーザーの認証に失敗 |
 | 404 | ユーザが未登録 |
+| 409 | 既に削除済みのユーザ |
 | 500 | サーバー内エラー |
 
 認証に成功すると JWT を返却します。
@@ -236,6 +272,42 @@ authenticator はリクエストに対し下記のいずれかの応答をしま
 ```response-example
 {"jwt":"xxxxx.xxxxx.xxxxx"}
 ```
+
+### POST /users/login_id/{{login_id}}
+ユーザーの削除を行います。内部的にはデータの削除は行われずに、users table の deleted_at の項目に現在時刻が登録されます。
+
+#### リクエスト
+ユーザー情報の更新には下記のパラメータを指定して、 DELETE リクエストを送信してください。
+
+| name | description |
+| --- | --- |
+| password | 削除対象のユーザの password |
+
+password での認証に失敗した場合は削除されません。
+
+```http_request
+DELETE /users/login_id/{{logain_id}}
+Origin: http://{{host_name}}
+Content-Type: application/x-www-form-urlencoded
+
+password=okpassword
+```
+
+```
+curl -X DELETE http://{{host_name}}/users/login_id/{{logain_id}} -d password=password
+```
+
+#### レスポンス
+authenticator はリクエストに対し下記のいずれかの応答をします。
+
+| status code | description |
+| --- | --- |
+| 200 | ユーザーの削除に成功|
+| 400 | リクエストパラメータが不正 |
+| 401 | ユーザーの認証に失敗 |
+| 404 | ユーザが未登録 |
+| 409 | 既に削除済みのユーザ |
+| 500 | サーバー内エラー |
 
 ### 認可
 authenticator サーバーから取得した jwt を認可するには、下記のコマンドで出力される公開鍵を認可サーバーに配置する必要があります。
@@ -254,9 +326,6 @@ JET のクレームには下記の項目が含まれています。
 | user_id | ユーザーID |
 | exp | 有効期限 |
 
-## システム構成図
-![img](docs/authenticator.png)
-
 ## テスト
 
 ### Unit テスト
@@ -274,41 +343,41 @@ func TestValidateJWTToken(t *testing.T) {
 	const publicKey = "" <- ここに public.key の内容を入力
 ```
 
-### 動作確認
-`docker-compose` を使用して mysql と authenticator コンテナを立ててテストを行います。
-ホスト側のポート 1323 を使用して authenticator と通信します。
-
-#### セットアップ
-`configs/configs.yaml` の database セクションの 設定を変更します。
-```
-database:
-  host_name: mysql
-  port: 3306
-  # 他はそのまま
-```
-
-#### コンテナの起動
-authenticator コンテナは起動後すぐに mysql とのコネクションを確立しようとします。
-そのため、 mysql コンテナの起動が完了してから authenticator コンテナを起動してください。
-
-```shell
-# build
-$ docker-compose build
-
-# mysql コンテナを起動
-$ docker-compose up mysql
-
-# authenticator コンテナを起動
-$ docker-compose up authenticator
-
-```
 
 #### 秘密鍵の配置
 authenticator は JWT の生成に秘密鍵を使用します。
-下記コマンドで生成される秘密鍵を環境変数 `PRIVATE_KEY` にセットしてください
+下記コマンドで生成される秘密鍵を `configs/configs.yaml` の `private_key` 項目にセットしてください
 
 ```
 $ make generate-key-pair
+```
+
+example: configs/configs.yaml
+
+```
+server:
+  port: 1323
+  shutdown_wait_time: 1
+database:
+  host_name: mysql
+  port: 3306
+  user_name: xxxxx
+  user_password: xxxxx
+  name: Authenticator # database name
+  table_name: Users # table name 強制指定のため
+  max_open_connection: 10
+  max_idle_connection: 5
+  max_life_time: 24
+jwt:
+  exp: 24 # hour
+private_key: |-
+  -----BEGIN RSA PRIVATE KEY-----
+  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  XXXX/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXX
+  (中略)
+  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXX
+  XXX/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/XXXXXXXXXX/XXXXXXXXXXXXXX
+  -----END RSA PRIVATE KEY-----
 ```
 
 #### ローカル環境で実行 (おすすめ)
@@ -344,6 +413,12 @@ curl -X POST http://localhost:1323/login -d login_id=Sample_user -d password=OK_
 ```
 curl -X PUT http://localhost:1323/users/login_id/Sample_user -d old_password=OK_password -d login_id=sampleuser -d password=okpassword -d qos=raw
 ```
+
+#### 削除
+```
+curl -X POST http://localhost:1323/users/login_id/Sample_user -d password=OK_password
+```
+
 
 ## 入力規則
 user を新規登録する際は下記の入力規則にしたがって登録してください。

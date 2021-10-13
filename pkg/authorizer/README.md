@@ -5,8 +5,9 @@ authenticator で提供される JWT の検証を行います。
 `pkg/authorizer` をインポートしてください。
 
 ### 事前準備
-JWT のデジタル署名の検証に authorizer の公開鍵を使用します。
-公開鍵を取得後、環境変数 `AUTHENTICATOR_PUBLIC_KEY` にセットしてください。
+JWT のデジタル署名の検証に authenticator の公開鍵を使用します。
+生成された公開鍵をコピーして、authorizer を使用する pod に配置してください。
+また、使用する pod の環境変数 `CREDENTIAL_FILE_PATH` に配置した公開鍵の file_path 設定する必要があります。 
 
 ### JWT の検証
 `pkg/authorizer/authorizer.go` で提供される関数 `VerifyJWTToken()` を使用します。

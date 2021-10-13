@@ -21,4 +21,7 @@ RUN apk --no-cache add tzdata ca-certificates && \
 COPY --from=builder /app /app
 RUN chmod u+x /app
 
+ARG PRIVATE_KEY
+ENV PRIVATE_KEY ${PRIVATE_KEY}
+
 ENTRYPOINT ["/app/server"]

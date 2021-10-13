@@ -53,7 +53,7 @@ func TestValidateJWTToken(t *testing.T) {
 	for i, test := range tests {
 		_, err := VerifyJWTToken(test.tokenString)
 		if (err != nil) != test.wantErr {
-			t.Errorf("#%d ValidateJWTToken() error: %v, wantErr: %v", i, err, test.wantErr)
+			t.Errorf("XXX ValidateJWTToken() error: %v, wantErr: %v", i, err, test.wantErr)
 		}
 	}
 }

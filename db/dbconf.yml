@@ -1,7 +1,0 @@
-development:
-  driver: mymysql
-  open: tcp:localhost:3306*Authenticator/DB_USER_NAME/DB_USER_PASSWORD
-
-#production:
-#  driver: mymysql
-#  open: tcp:localhost:3306*Authenticator/DB_USER_NAME/DB_USER_PASSWORD

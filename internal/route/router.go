@@ -14,4 +14,6 @@ func RegisterRouting(e *echo.Echo) {
 	e.PUT("/users/login_id/:login_id", handler.UpdateUser)
 	// ユーザー取得
 	e.GET("/users/login_id/:login_id", handler.GetUser)
+	// ユーザー削除
+	e.POST("/users/login_id/:login_id", handler.DeleteUser)
 }

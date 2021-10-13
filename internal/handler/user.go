@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"bitbucket.org/latonaio/authenticator/internal/crypto"
 	"bitbucket.org/latonaio/authenticator/internal/models"
@@ -12,13 +13,15 @@ import (
 )
 
 type UserParam struct {
-	LoginID  string `json:"login_id" form:"login_id"`
-	Password string `json:"password" form:"password"`
-	Qos      string `json:"qos" form:"qos"`
+	LoginID   string `json:"login_id" form:"login_id"`
+	Password  string `json:"password" form:"password"`
+	Qos       string `json:"qos" form:"qos"`
+	IsEncrypt bool   `json:"is_encrypt" form:"is_encrypt"`
 }
 
 func RegisterUser(c echo.Context) error {
 	param := &UserParam{}
+	param.IsEncrypt = true // default value
 	err := c.Bind(param)
 	if err != nil {
 		return c.JSON(custmres.BadRequestRes.Code, custmres.BadRequestRes)
@@ -45,18 +48,24 @@ func RegisterUser(c echo.Context) error {
 		return c.JSON(custmres.Conflict.Code, custmres.Conflict.Message)
 	}
 
-	// encrypt password
-	encryptedPassword, err := crypto.Encrypt(param.Password)
-	if err != nil {
-		c.Logger().Printf("Failed to encrypt password: %v", err)
-		return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
-	}
-	user.SetUser(&models.User{
+	userImp := &models.User{
 		LoginID:     param.LoginID,
-		Password:    encryptedPassword,
+		Password:    param.Password,
 		Qos:         unverifiedUser.Qos,
+		IsEncrypt:   &param.IsEncrypt,
 		LastLoginAt: nil,
-	})
+	}
+
+	// encrypt password
+	if param.IsEncrypt {
+		encryptedPassword, err := crypto.Encrypt(param.Password)
+		if err != nil {
+			c.Logger().Printf("Failed to encrypt password: %v", err)
+			return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
+		}
+		userImp.Password = encryptedPassword
+	}
+	user.SetUser(userImp)
 
 	err = user.Register()
 	if err != nil {
@@ -80,6 +89,7 @@ func (p *UpdateUserParam) QosExists() bool {
 
 func UpdateUser(c echo.Context) error {
 	param := &UpdateUserParam{}
+	param.IsEncrypt = true // default value
 	err := c.Bind(param)
 	if err != nil {
 		return c.JSON(custmres.BadRequestRes.Code, custmres.BadRequestRes)
@@ -96,17 +106,29 @@ func UpdateUser(c echo.Context) error {
 			return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
 		}
 	}
+	if result != nil && result.IsDeleted() {
+		c.Logger().Print("User is already deleted.")
+		return c.JSON(custmres.Conflict.Code, custmres.Conflict.Message)
+	}
 
 	// authenticate old password.
-	if err := crypto.CompareHashAndPassword(result.Password, param.OldPassword); err != nil {
-		c.Logger().Printf("Failed to login: %v", err)
-		return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
+	if !*result.IsEncrypt {
+		if result.Password != param.OldPassword {
+			c.Logger().Print("Failed to login due to incorrect password")
+			return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
+		}
+	} else {
+		if err := crypto.CompareHashAndPassword(result.Password, param.OldPassword); err != nil {
+			c.Logger().Printf("Failed to login: %v", err)
+			return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
+		}
 	}
 
 	userImp := &models.User{
-		LoginID:  param.LoginID,
-		Password: param.Password,
-		Qos:      models.ToQos(param.Qos),
+		LoginID:   param.LoginID,
+		Password:  param.Password,
+		Qos:       models.ToQos(param.Qos),
+		IsEncrypt: &param.IsEncrypt,
 	}
 	if !param.QosExists() {
 		userImp.Qos = result.Qos
@@ -121,7 +143,7 @@ func UpdateUser(c echo.Context) error {
 	}
 
 	// encrypt password.
-	if param.PasswordExists() {
+	if param.PasswordExists() && param.IsEncrypt {
 		encryptedPassword, err := crypto.Encrypt(param.Password)
 		if err != nil {
 			c.Logger().Printf("Failed to encrypt password: %v", err)
@@ -149,5 +171,60 @@ func GetUser(c echo.Context) error {
 			return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
 		}
 	}
+	if result != nil && result.IsDeleted() {
+		c.Logger().Print("User is already deleted.")
+		return c.JSON(custmres.Conflict.Code, custmres.Conflict.Message)
+	}
 	return c.JSON(http.StatusOK, custmres.UserResponseFormat{LoginID: result.LoginID})
+}
+
+type DeleteUserParam struct {
+	Password string `json:"password" form:"password"`
+}
+
+func DeleteUser(c echo.Context) error {
+
+	// ユーザの理論削除を行います。
+	// 具体的な処理としては、ユーザモデルの deleted_at フラグに現在時刻を登録します。
+
+	param := &DeleteUserParam{}
+	err := c.Bind(param)
+	if err != nil {
+		return c.JSON(custmres.BadRequestRes.Code, custmres.BadRequestRes)
+	}
+	loginID := c.Param("login_id")
+
+	result, err := models.NewUser().GetByLoginID(loginID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.Logger().Printf("Login id is not found: %s", loginID)
+			return c.JSON(custmres.NotFoundErrRes.Code, custmres.NotFoundErrRes)
+		} else {
+			c.Logger().Printf("Failed to db access: %v", err)
+			return c.JSON(custmres.InternalErrRes.Code, custmres.InternalErrRes)
+		}
+	}
+	if result != nil && result.IsDeleted() {
+		c.Logger().Print("User is already deleted.")
+		return c.JSON(custmres.Conflict.Code, custmres.Conflict.Message)
+	}
+
+	// authenticate password.
+	if !*result.IsEncrypt {
+		if result.Password != param.Password {
+			c.Logger().Print("Failed to login due to incorrect password")
+			return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
+		}
+	} else {
+		if err := crypto.CompareHashAndPassword(result.Password, param.Password); err != nil {
+			c.Logger().Printf("Failed to login: %v", err)
+			return c.JSON(custmres.UnauthorizedRes.Code, custmres.UnauthorizedRes)
+		}
+	}
+	now := time.Now()
+	userImp := &models.User{ID: result.ID, DeletedAt: &now}
+	if err := userImp.Update(); err != nil {
+		return err
+	}
+	return nil
 }

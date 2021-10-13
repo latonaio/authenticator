@@ -5,7 +5,7 @@
 # http://www.sequelpro.com/
 # https://github.com/sequelpro/sequelpro
 #
-# ホスト: 10.2.28.59 (MySQL 5.5.5-10.2.33-MariaDB-1:10.2.33+maria~bionic)
+# ホスト: 10.2.XX.XX (MySQL 5.X.X-10.X.XX-MariaDB-1:10.X.XX+maria~bionic)
 # データベース: authenticator
 # 作成時刻: 2021-01-27 01:34:54 +0000
 # ************************************************************
@@ -29,6 +29,8 @@ CREATE TABLE `Users` (
   `id` int AUTO_INCREMENT,
   `login_id` varchar(20) NOT NULL DEFAULT '',
   `password` varchar(70) NOT NULL DEFAULT '',
+  `qos` varchar(20) NOT NULL DEFAULT 'default',
+  `is_encrypt` BOOLEAN NOT NULL DEFAULT TRUE,
   `last_login_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
