@@ -1,5 +1,5 @@
 server:
-  port: 1323
+  port: 50500
   shutdown_wait_time: 1
 database:
   host_name: HOST_NAME

@@ -63,18 +63,16 @@ authenticatorはaion-core上で稼働します。したがって、[aion-service
 
 ```
 microservices:
-  authenticator:           # サービス名
-      startup: yes         # AION起動時に起動するか
-      always: yes          # 常時起動するか
-      multiple: no         # 複数同時に起動するか
-      network: NodePort
-      ports:
-      - name: authenticator
-        protocol: TCP
-        port: xxxx        # kube内のPod間で通信する際に使うポート番号
-        nodePort: xxxx    # kube外からの通信に必要なポート番号
-      env:
-        KANBAN_ADDR: aion-statuskanban:10000
+  authenticator:         # サービス名
+    startup: yes         # AION起動時に起動
+    always: yes          # 常時起動
+    scale: 1             # 複数同時に起動させない
+    network: NodePort
+    ports:
+    - name: authenticator
+      protocol: TCP
+      port: 50500         # kube内のPod間で通信する際に使うポート番号
+      nodePort: 30500     # kube外からの通信に必要なポート番号
 ```
 
 ## データベース管理
