@@ -16,7 +16,7 @@ authenticator は、次のようなシステム環境において、特に重要
 
 ## authenticator が含まれる アーキテクチャ（OMOTE-Bakoアプリケーションの例）  
 authenticatorは、下記の黄色い枠の部分のリソースです。
-![img](docs/omotebako_architecture_20211013_authenticator.png)
+![img](docs/omotebako_architecture_20211104_authenticator.png)
 
 
 ## 事前準備
